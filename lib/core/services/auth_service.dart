@@ -21,6 +21,11 @@ class AuthService {
     await prefs.remove(_authKey);
   }
 
+  Future<String?> getAuthKey() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_authKey);
+  }
+
   /// Calls Login API and saves the token if success.
   /// Returns the token string.
   Future<String> login({required String username, required String password}) async {

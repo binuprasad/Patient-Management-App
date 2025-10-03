@@ -15,6 +15,21 @@ class AuthProvider extends ChangeNotifier {
   String? get token => _token;
   bool get isLoggedIn => (_token != null && _token!.isNotEmpty);
 
+  Future<void> loadSavedToken() async {
+    try {
+      final t = await _auth.getAuthKey();
+      _token = t;
+      notifyListeners();
+    } catch (_) {
+      // ignore
+    }
+  }
+
+  void setToken(String? token) {
+    _token = token;
+    notifyListeners();
+  }
+
   Future<bool> login({required String username, required String password}) async {
     _error = null;
     _loading = true;

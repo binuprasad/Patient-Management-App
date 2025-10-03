@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:patientmanagementapp/features/patient/providers/patient_provider.dart';
+import 'package:intl/intl.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -11,19 +14,29 @@ class _HomeScreenState extends State<HomeScreen> {
   final _searchCtrl = TextEditingController();
   String _sortBy = 'Date';
 
-  final List<Map<String, String>> _bookings = List.generate(6, (i) {
-    return {
-      'name': 'Vikram Singh',
-      'package': 'Couple Combo Package (Rejuvenation)',
-      'date': '31/01/2024',
-      'by': 'Jithesh',
-    };
-  });
+  @override
+  void initState() {
+    super.initState();
+    // Trigger initial load
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<PatientProvider>().fetchPatients();
+    });
+  }
 
   @override
   void dispose() {
     _searchCtrl.dispose();
     super.dispose();
+  }
+
+  String _formatDate(String? raw) {
+    if (raw == null || raw.trim().isEmpty) return '-';
+    try {
+      final dt = DateTime.parse(raw);
+      return DateFormat('dd/MM/yyyy').format(dt);
+    } catch (_) {
+      return raw;
+    }
   }
 
   @override
@@ -147,18 +160,78 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: 12),
 
               Expanded(
-                child: ListView.separated(
-                  itemCount: _bookings.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 12),
-                  itemBuilder: (context, index) {
-                    final item = _bookings[index];
-                    return _BookingCard(
-                      index: index + 1,
-                      name: item['name']!,
-                      package: item['package']!,
-                      date: item['date']!,
-                      by: item['by']!,
-                      onViewDetails: () {},
+                child: Consumer<PatientProvider>(
+                  builder: (context, state, _) {
+                    if (state.loading && state.patients.isEmpty) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+
+                    if (state.error != null && state.patients.isEmpty) {
+                      return Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.error_outline,
+                              color: Colors.redAccent,
+                            ),
+                            const SizedBox(height: 8),
+                            Text(state.error!, textAlign: TextAlign.center),
+                            const SizedBox(height: 12),
+                            ElevatedButton(
+                              onPressed: () => state.fetchPatients(),
+                              child: const Text('Retry'),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+
+                    if (state.patients.isEmpty) {
+                      return RefreshIndicator(
+                        onRefresh: state.refresh,
+                        child: ListView(
+                          children: const [
+                            SizedBox(height: 80),
+                            Center(
+                              child: Column(
+                                children: [
+                                  Icon(
+                                    Icons.inbox_outlined,
+                                    size: 96,
+                                    color: Color(0xFF9CA3AF),
+                                  ),
+                                  SizedBox(height: 12),
+                                  Text('No patients found'),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+
+                    return RefreshIndicator(
+                      onRefresh: state.refresh,
+                      child: ListView.separated(
+                        itemCount: state.patients.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 12),
+                        itemBuilder: (context, index) {
+                          final p = state.patients[index];
+                          return _BookingCard(
+                            index: index + 1,
+                            name: p.name,
+                            package:
+                                (p.package != null &&
+                                    p.package!.trim().isNotEmpty)
+                                ? p.package!
+                                : 'No Package',
+                            date: _formatDate(p.date),
+                            by: p.createdBy ?? '-',
+                            onViewDetails: () {},
+                          );
+                        },
+                      ),
                     );
                   },
                 ),
