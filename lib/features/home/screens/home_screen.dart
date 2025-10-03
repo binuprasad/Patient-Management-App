@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:patientmanagementapp/features/patient/providers/patient_provider.dart';
 import 'package:intl/intl.dart';
+import 'package:patientmanagementapp/routes/app_router.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -221,9 +222,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           return _BookingCard(
                             index: index + 1,
                             name: p.name,
-                            package:
-                                (p.package != null &&
-                                    p.package!.trim().isNotEmpty)
+                            package: (p.package != null && p.package!.trim().isNotEmpty)
                                 ? p.package!
                                 : 'No Package',
                             date: _formatDate(p.date),
@@ -249,7 +248,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
-                  onPressed: () {},
+                  onPressed: () => Navigator.pushNamed(context, AppRoutes.register),
                   child: const Text('Register Now'),
                 ),
               ),
