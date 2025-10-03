@@ -1,9 +1,53 @@
 import 'package:flutter/material.dart';
 import 'package:patientmanagementapp/features/auth/widgets/labeled_field.dart';
 import 'package:patientmanagementapp/features/auth/widgets/password_field.dart';
+import 'package:patientmanagementapp/core/services/auth_service.dart';
+import 'package:patientmanagementapp/routes/app_router.dart';
 
-class LoginScreen extends StatelessWidget {
+class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
+
+  @override
+  State<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
+  final _usernameCtrl = TextEditingController(text: 'test_user');
+  final _passwordCtrl = TextEditingController(text: '12345678');
+  final _auth = AuthService();
+  bool _loading = false;
+
+  @override
+  void dispose() {
+    _usernameCtrl.dispose();
+    _passwordCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    final username = _usernameCtrl.text.trim();
+    final password = _passwordCtrl.text;
+    if (username.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter username and password')),
+      );
+      return;
+    }
+    setState(() => _loading = true);
+    try {
+      await _auth.login(username: username, password: password);
+      if (!mounted) return;
+      final nav = Navigator.of(context);
+      nav.pushReplacementNamed(AppRoutes.home);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString())),
+      );
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -54,10 +98,11 @@ class LoginScreen extends StatelessWidget {
                       label: 'Email',
                       hint: 'Enter your email',
                       keyboardType: TextInputType.emailAddress,
+                      controller: _usernameCtrl,
                     ),
                     const SizedBox(height: 14),
 
-                    const PasswordField(),
+                    PasswordField(controller: _passwordCtrl),
                     const SizedBox(height: 22),
 
                     SizedBox(
@@ -71,14 +116,23 @@ class LoginScreen extends StatelessWidget {
                             borderRadius: BorderRadius.circular(8),
                           ),
                         ),
-                        onPressed: () {},
-                        child: const Text(
-                          'Login',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
+                        onPressed: _loading ? null : _submit,
+                        child: _loading
+                            ? const SizedBox(
+                                width: 22,
+                                height: 22,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                ),
+                              )
+                            : const Text(
+                                'Login',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
                       ),
                     ),
                     const SizedBox(height: 24),

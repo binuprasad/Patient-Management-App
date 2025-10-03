@@ -6,11 +6,13 @@ class LabeledField extends StatelessWidget {
     required this.label,
     required this.hint,
     this.keyboardType,
+    this.controller,
   });
 
   final String label;
   final String hint;
   final TextInputType? keyboardType;
+  final TextEditingController? controller;
 
   InputDecoration _decoration() {
     return InputDecoration(
@@ -43,6 +45,7 @@ class LabeledField extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         TextFormField(
+          controller: controller,
           keyboardType: keyboardType,
           decoration: _decoration(),
         ),
