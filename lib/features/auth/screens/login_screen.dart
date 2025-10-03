@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:patientmanagementapp/features/auth/widgets/labeled_field.dart';
 import 'package:patientmanagementapp/features/auth/widgets/password_field.dart';
-import 'package:patientmanagementapp/core/services/auth_service.dart';
 import 'package:patientmanagementapp/routes/app_router.dart';
+import 'package:provider/provider.dart';
+import 'package:patientmanagementapp/features/auth/providers/auth_provider.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -14,8 +15,6 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final _usernameCtrl = TextEditingController(text: 'test_user');
   final _passwordCtrl = TextEditingController(text: '12345678');
-  final _auth = AuthService();
-  bool _loading = false;
 
   @override
   void dispose() {
@@ -33,19 +32,15 @@ class _LoginScreenState extends State<LoginScreen> {
       );
       return;
     }
-    setState(() => _loading = true);
-    try {
-      await _auth.login(username: username, password: password);
-      if (!mounted) return;
-      final nav = Navigator.of(context);
-      nav.pushReplacementNamed(AppRoutes.home);
-    } catch (e) {
-      if (!mounted) return;
+    final ok = await context.read<AuthProvider>().login(username: username, password: password);
+    if (!mounted) return;
+    if (ok) {
+      Navigator.of(context).pushReplacementNamed(AppRoutes.home);
+    } else {
+      final msg = context.read<AuthProvider>().error ?? 'Login failed';
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString())),
+        SnackBar(content: Text(msg)),
       );
-    } finally {
-      if (mounted) setState(() => _loading = false);
     }
   }
 
@@ -116,8 +111,8 @@ class _LoginScreenState extends State<LoginScreen> {
                             borderRadius: BorderRadius.circular(8),
                           ),
                         ),
-                        onPressed: _loading ? null : _submit,
-                        child: _loading
+                        onPressed: context.watch<AuthProvider>().loading ? null : _submit,
+                        child: context.watch<AuthProvider>().loading
                             ? const SizedBox(
                                 width: 22,
                                 height: 22,
